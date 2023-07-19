@@ -14,7 +14,6 @@ namespace ApiAutores
 
             modelBuilder.Entity<AutoreLibro>()
                 .HasKey(al => new { al.AutorId, al.libroId });
-
         }
 
 

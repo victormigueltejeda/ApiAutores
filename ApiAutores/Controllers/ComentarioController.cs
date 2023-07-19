@@ -32,13 +32,30 @@ namespace ApiAutores.Controllers
         }
 
 
+        [HttpGet("{id:int}",Name = "obtenerComentario")]
+        public async Task<ActionResult<ComentarioDtos>> GetPorId(int id)
+        {
+            var comentario = await context.Comentario.FirstOrDefaultAsync(comentarioDB => comentarioDB.Id == id);
+
+            if (comentario == null)
+            {
+                return NotFound();
+
+            }
+
+
+            return mapper.Map<ComentarioDtos>(comentario);
+
+        }
+
+
 
 
         [HttpPost]
         public async Task<ActionResult> Post(int libroId, CreacionComentarioDtos creacionComentarioDtos)
         {
 
-            var ExisteLibro = await context.Libros.AnyAsync(libroDB => libroDB.Id == libroId);
+            var ExisteLibro = await context.Autores.AnyAsync(libroDB => libroDB.Id == libroId);
 
             if (!ExisteLibro)
             {
@@ -49,8 +66,41 @@ namespace ApiAutores.Controllers
             comentario.LibroId = libroId;
             context.Add(comentario);
             await context.SaveChangesAsync();
-            return Ok();
 
+
+            ComentarioDtos comentarioDtos = mapper.Map<ComentarioDtos>(comentario);
+
+            return CreatedAtRoute("obtenerComentario", new { id = comentario.Id, libroId =libroId}, comentarioDtos);
+
+        }
+
+        [HttpPut("{id:int}")]
+
+        public async Task<ActionResult> Put(int libroId, int id,CreacionComentarioDtos creacionComentarioDtos)
+        {
+
+            var existeLibro = await context.Libros.AnyAsync(libroDB => libroDB.Id == id);
+
+            if (!existeLibro)
+            {
+                return NotFound();
+            }
+
+            var existeCometario = await context.Comentario.AnyAsync(cometarioDB => cometarioDB.Id == id);
+
+            if (!existeCometario)
+            {
+                return NotFound();
+            }
+
+
+            var cometario = mapper.Map<Comentario>(creacionComentarioDtos);
+            cometario.Id = id;
+            cometario.LibroId = libroId;
+
+            context.Update(cometario);
+            context.SaveChangesAsync();
+            return NoContent();
         }
     }
 }

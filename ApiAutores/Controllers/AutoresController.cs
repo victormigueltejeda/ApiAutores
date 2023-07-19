@@ -42,19 +42,22 @@ namespace ApiAutores.Controllers
             return mapper.Map<List<AutorDtos>>(autores);
         }
 
-        [HttpGet("{id:int}")]
+        [HttpGet("{id:int}",Name = "obtenerAutor")]
         //[Authorize]
-        public async Task<ActionResult<AutorDtos>> Get(int id)
+        public async Task<ActionResult<AutorDtosConLibros>> Get(int id)
         {
 
-            var ConsultarAutor = await context.Autores.FirstOrDefaultAsync(item => item.Id == id);
+            var ConsultarAutor = await context.Autores
+                .Include(autoreDB => autoreDB.AutoresLibros)
+                .ThenInclude(autoresLibrosDB => autoresLibrosDB.Libro)
+                .FirstOrDefaultAsync(item => item.Id == id);
 
             if(ConsultarAutor == null)
             {
                 return NotFound();
             }
 
-            return mapper.Map<AutorDtos>(ConsultarAutor);
+            return mapper.Map<AutorDtosConLibros>(ConsultarAutor);
         
         }
 
@@ -90,22 +93,30 @@ namespace ApiAutores.Controllers
 
             context.Add(autor);
             await context.SaveChangesAsync();
-            return Ok();
+
+            var autorDTO = mapper.Map<AutorDtos>(autor);
+
+            return CreatedAtRoute("obtenerAutor",new {id = autor.Id}, autorDTO);
         }
 
 
 
         [HttpPut("{id:int}")]
-        public async Task<ActionResult> Put(Autores autor,int id)
+        public async Task<ActionResult> Put(AutorCreacionDtos autorCracionDtos,int id)
         {
+            var existe = await context.Autores.AnyAsync(x => x.Id == id);
 
-            if(autor.Id != id)
+            if(!existe)
             {
-                return BadRequest("No Existe Un Cliente Con Este Id");
+                return NotFound();
             }
 
-            var existe = await context.Autores.AnyAsync(x => x.Id == id);
-            return Ok();
+            var autor = mapper.Map<Autores>(autorCracionDtos);
+            autor.Id = id;
+
+            context.Update(autor);
+            await context.SaveChangesAsync();
+            return NoContent();
         }
 
 
